@@ -6,6 +6,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '4.0.3'
     id 'groovy'
     id "net.java.openjdk.shinyafox.jshell.gradle.plugin" version "1.0.4"
+    id 'maven-publish'
 }
 
 group 'io.github.codecitizen'
@@ -115,6 +116,24 @@ uploadArchives {
                     }
                 }
             }
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/DDS-GmbH/jlibvips")
+            credentials {
+                username = "github-actions"
+                password = project.findProperty("GITHUB_TOKEN") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
         }
     }
 }
