@@ -10,7 +10,7 @@ import static TestUtils.*
 class VipsImageSpec extends Specification {
 
     def setupSpec() {
-        VipsBindingsSingleton.configure("/usr/local/lib/libvips.so")
+        VipsBindingsSingleton.configure("/usr/local/lib/libvips.42.dylib")
     }
 
     def "get resolution of image"() {
