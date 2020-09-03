@@ -5,7 +5,7 @@ import com.sun.jna.Native;
 public class VipsBindingsSingleton {
 
 
-    private static String libraryPath = "/usr/local/Cellar/vips/8.7.0/lib/libvips.42.dylib";
+    private static String libraryPath = "vips";
 
     public static void configure(String lp) {
         libraryPath = lp;

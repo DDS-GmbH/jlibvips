@@ -9,27 +9,29 @@ import org.jlibvips.jna.glib.GLibBindingsSingleton;
 import org.jlibvips.jna.glib.GLibLogHandler;
 import org.jlibvips.jna.glib.GLogLevelFlags;
 import org.jlibvips.operations.*;
+import org.jlibvips.util.Varargs;
+import org.jlibvips.util.VipsUtils;
 
+import java.io.Closeable;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 
 /**
  * An image, residing in memory or disk, managed by libvips. Instance methods provide transformations and queries on
  * it.
- *
+ * <p>
  * When loading simple images from the file system, call {@link VipsImage#fromFile(Path)}.
- *
+ * <p>
  * For large vectorised PDFs we recommend {@link VipsImage#fromPdf(Path)}.
  *
  * @author amp
  */
-public class VipsImage {
+public class VipsImage implements Closeable {
 
     /**
      * This is the maximum resolution to which libvips can convert vectorised PDFs.
-     *
+     * <p>
      * libvips builds on libpoppler which uses cairographics to draw the vectors on a canvas. cairos canvas is limited
      * by 32767x32767 rows and therefore PDF pages loaded as {@link VipsImage} cannot be larger than that.
      *
@@ -42,23 +44,26 @@ public class VipsImage {
     public static VipsImage fromPdf(Path p, int page, float scale) {
         // Due to excessive testing we set 6 to be the maximum scale parameter and decrease by 0.1 until we reach a
         // scale working with the limit.
-        VipsImage image;
+        VipsImage image = null;
         do {
             Pointer[] ptr = new Pointer[1];
             int ret = VipsBindingsSingleton.instance().vips_pdfload(p.toString(), ptr, "scale", scale, "page", page, null);
-            if(ret != 0) {
+            if (ret != 0) {
                 throw new CouldNotLoadPdfVipsException(ret);
+            }
+            if (image != null) {
+                image.unref();
             }
             image = new VipsImage(ptr[0]);
             scale -= 0.1f;
-        } while(image.getWidth() > POPPLER_CAIRO_LIMIT || image.getHeight() > POPPLER_CAIRO_LIMIT);
+        } while (image.getWidth() > POPPLER_CAIRO_LIMIT || image.getHeight() > POPPLER_CAIRO_LIMIT);
         return image;
     }
 
     /**
      * Loads a PDF document's page as {@link VipsImage} in the greatest possible resolution.
      *
-     * @param p {@link Path} to the PDF document.
+     * @param p    {@link Path} to the PDF document.
      * @param page page number (starting at 0)
      * @return the PDF page as {@link VipsImage}.
      */
@@ -95,20 +100,169 @@ public class VipsImage {
      * @return the {@link VipsImage}
      */
     public static VipsImage fromString(String string) {
-        if(string == null)
+        if (string == null)
             return null;
         byte[] buffer = string.getBytes();
         Pointer ptr = VipsBindingsSingleton.instance().vips_image_new_from_buffer(buffer, buffer.length, "");
         return new VipsImage(ptr);
     }
 
-  /**
-   * Registers a new logging handler for the libvips GLib logs.
-   *
-   * @param levels the subscribed {@link org.jlibvips.jna.glib.GLogLevelFlags}.
-   * @param loggingFunction the logging function taking the flag as first and log message as second parameter.
-   */
-    public static void registerLogHandler(List<GLogLevelFlags> levels, BiConsumer<GLogLevelFlags,String> loggingFunction) {
+    public static VipsImage newBlack(Integer width, Integer height, Integer bands) {
+        Pointer[] out = new Pointer[1];
+        int ret = VipsBindingsSingleton.instance()
+                .vips_black(out, width, height, new Varargs().add("bands", bands).toArray());
+        if (ret == -1) {
+            throw new VipsException("vips_black", ret);
+        }
+        return new VipsImage(out[0]);
+    }
+
+    public VipsImage newFromImage(double[] value) {
+        Pointer ptr = VipsBindingsSingleton.instance().vips_image_new_from_image(this.ptr, value, value.length);
+        return new VipsImage(ptr);
+    }
+
+    public static VipsIdentityOperation identity() {
+        return new VipsIdentityOperation();
+    }
+
+    public ColorspaceOperation colorspace() {
+        return new ColorspaceOperation(this);
+    }
+
+    public CopyOperation copy() {
+        return new CopyOperation(this);
+    }
+
+    public CastOperation cast() {
+        return new CastOperation(this);
+    }
+
+    public VipsImage cast(VipsBandFormat format) {
+        return cast().cast(format);
+    }
+
+    public LinearOperation linear() {
+        return new LinearOperation(this);
+    }
+
+    public VipsImage linear(double a, double b) {
+        return linear().linear(a, b);
+    }
+
+    public VipsImage linear(double[] a, double[] b) {
+        return linear().linear(a, b, a.length);
+    }
+
+    public RelationalOperation relationalOperation() {
+        return new RelationalOperation(this);
+    }
+
+    public MaplutOperation maplut() {
+        return new MaplutOperation(this);
+    }
+
+    public VipsImage eq(double... c) {
+        return relationalOperation().relational_const(VipsOperationRelational.EQUAL, c);
+    }
+
+    public VipsImage notEq(double... c) {
+        return relationalOperation().relational_const(VipsOperationRelational.NOTEQ, c);
+    }
+
+    public VipsImage less(double... c) {
+        return relationalOperation().relational_const(VipsOperationRelational.LESS, c);
+    }
+
+    public VipsImage lessEq(double... c) {
+        return relationalOperation().relational_const(VipsOperationRelational.LESSEQ, c);
+    }
+
+    public VipsImage more(double... c) {
+        return relationalOperation().relational_const(VipsOperationRelational.MORE, c);
+    }
+
+    public VipsImage moreEq(double[] c) {
+        return relationalOperation().relational_const(VipsOperationRelational.MOREEQ, c);
+    }
+
+    public VipsImage moreEq(double c) {
+        return relationalOperation().relational_const(VipsOperationRelational.MOREEQ, c);
+    }
+
+    public VipsImage last(double... c) {
+        return relationalOperation().relational_const(VipsOperationRelational.LAST, c);
+    }
+
+    public IfThenElseOperation ifThenElseOperation() {
+        return new IfThenElseOperation(this);
+    }
+
+    public VipsImage ifthenelse(VipsImage inThen, VipsImage inElse, Boolean blend) {
+        return ifThenElseOperation().ifthenelse(inThen, inElse, blend);
+    }
+
+    public VipsImage ifthenelse(VipsImage inThen, VipsImage inElse) {
+        return ifThenElseOperation().ifthenelse(inThen, inElse, null);
+    }
+
+    public VipsImage ifthenelse(double[] inThen, double[] inElse) {
+        return ifThenElseOperation().ifthenelse(newFromImage(inThen), newFromImage(inElse));
+    }
+
+    public VipsImage maplut(VipsImage lut) {
+        return maplut().maplut(lut, null);
+    }
+
+    public BandJoinOperation bandjoin() {
+        return new BandJoinOperation(this);
+    }
+
+    private Pointer toNBands(int bands) {
+        int current = getBands();
+
+        if (current >= bands) return this.ptr;
+
+        int len = bands - current;
+        double[] c = new double[len];
+        for (int i = 0; i < len; i++) c[i] = 255;
+
+        return bandjoin().bandjoin_const(c).ptr;
+    }
+
+    public VipsImage removeColor(double[] rgba) {
+        VipsBindings vips = VipsBindingsSingleton.instance();
+
+        Pointer base = toNBands(4);
+
+        Pointer[] preCond = new Pointer[1];
+        int retPreCond = vips.vips_relational_const(base, preCond, VipsUtils.toOrdinal(VipsOperationRelational.MOREEQ), rgba, 4);
+        if (retPreCond == -1)
+            return null;
+
+        Pointer[] cond = new Pointer[1];
+        int retCond = vips.vips_bandand(preCond[0], cond);
+        if (retCond == -1)
+            return null;
+
+        double[] transColor = new double[]{0, 0, 0, 0};
+        Pointer transp = vips.vips_image_new_from_image(this.ptr, transColor, 4);
+
+        Pointer[] out = new Pointer[1];
+        int ret = vips.vips_ifthenelse(cond[0], transp, base, out);
+        if (ret == -1)
+            return null;
+
+        return new VipsImage(out[0]);
+    }
+
+    /**
+     * Registers a new logging handler for the libvips GLib logs.
+     *
+     * @param levels          the subscribed {@link org.jlibvips.jna.glib.GLogLevelFlags}.
+     * @param loggingFunction the logging function taking the flag as first and log message as second parameter.
+     */
+    public static void registerLogHandler(List<GLogLevelFlags> levels, BiConsumer<GLogLevelFlags, String> loggingFunction) {
         int flags = levels.stream()
                 .map(GLogLevelFlags::getVal)
                 .reduce((l1, l2) -> l1 | l2).orElse(GLogLevelFlags.G_LOG_LEVEL_DEBUG.getVal());
@@ -220,6 +374,21 @@ public class VipsImage {
     }
 
     /**
+     * Write an image to a file in PNG format.
+     *
+     * <code>
+     *     java.nio.Path path = image.png().quality(100).save();
+     * </code>
+     *
+     * <a href="http://libvips.github.io/libvips/API/current/VipsForeignSave.html#vips-pngsave">vips_pngsave()</a>
+     *
+     * @return the {@link PngSaveOperation}
+     */
+    public PngSaveOperation png() {
+        return new PngSaveOperation(this);
+    }
+
+    /**
      * Get the width of this image.
      *
      * @return width in pixel
@@ -247,6 +416,33 @@ public class VipsImage {
      */
     public int getBands() {
         return VipsBindingsSingleton.instance().vips_image_get_bands(ptr);
+    }
+
+    public VipsInterpretation getInterpretation() {
+        int value = VipsBindingsSingleton.instance().vips_image_get_interpretation(ptr);
+        return VipsInterpretation.fromValue(value)
+                .orElseGet(() -> VipsInterpretation.ERROR);
+    }
+
+    public VipsBandFormat getFormat() {
+        int ordinal = VipsBindingsSingleton.instance().vips_image_get_format(ptr);
+        return VipsBandFormat.values()[ordinal];
+    }
+
+    public int xoffset() {
+        return VipsBindingsSingleton.instance().vips_image_get_xoffset(ptr);
+    }
+
+    public int yoffset() {
+        return VipsBindingsSingleton.instance().vips_image_get_xoffset(ptr);
+    }
+
+    public double xres() {
+        return VipsBindingsSingleton.instance().vips_image_get_xres(ptr);
+    }
+
+    public double yres() {
+        return VipsBindingsSingleton.instance().vips_image_get_yres(ptr);
     }
 
     /**
@@ -309,6 +505,19 @@ public class VipsImage {
         return new VipsResizeOperation(this.ptr, scale);
     }
 
+    /**
+     * Reduce input by a pair of factors with a pair of 1D kernels. This will not work well for shrink factors greater than three.
+     *
+     * <a href="https://jcupitt.github.io/libvips/API/current/libvips-resample.html#vips-reduce">vips-reduce</a>
+     *
+     * @param hshrink horizontal shrink
+     * @param vshrink vertical shrink
+     * @return the {@link VipsReduceOperation}
+     */
+    public VipsReduceOperation reduce(double hshrink, double vshrink) {
+        return new VipsReduceOperation(this.ptr, hshrink, vshrink);
+    }
+
     public VipsEmbedOperation embed(int x, int y, int width, int height) {
         return new VipsEmbedOperation(this.ptr, x, y, width, height);
     }
@@ -341,5 +550,29 @@ public class VipsImage {
 
     public SimilarityOperation similarity() {
         return new SimilarityOperation(this);
+    }
+
+    public FlattenOperation flatten() {
+        return new FlattenOperation(this);
+    }
+
+    /**
+     * When you are done with this image, use <code>unref()</code> to dispose of it.
+     *
+     * @see <a href="https://jcupitt.github.io/libvips/API/current/using-from-c.html">Reference counting</a>
+     */
+    public void unref() {
+        VipsBindingsSingleton.instance().g_object_unref(ptr);
+    }
+
+    @Override
+    public void close() {
+        this.unref();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("VipsImage { %dx%d %s, %d bands, %s }",
+                getWidth(), getHeight(), getFormat(), getBands(), getInterpretation());
     }
 }

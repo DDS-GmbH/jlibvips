@@ -8,12 +8,12 @@ A Java interface to [llibvips](http://libvips.github.io/libvips/), the fast imag
 <dependency>
   <groupId>io.github.codecitizen</groupId>
   <artifactId>jlibvips</artifactId>
-  <version>1.1</version>
+  <version>1.2.1</version>
 </dependency>
 ```
 
 ```groovy
-implementation 'io.github.codecitizen:jlibvips:1.1'
+implementation 'io.github.codecitizen:jlibvips:1.2.1'
 ```
 
 **Configure Path to libvips Library:**
@@ -38,11 +38,14 @@ public class PDFThumbnailExample {
         var thumbnail = image.thumbnail()
             .autoRotate()
             .create();
+        image.unref();
         var thumbnailFile = thumbnail.jpeg()
             .quality(100)
             .strip()
             .save();
-        System.out.printf("Thumbnail generated in '%s'.%n", thumbnailFile.toString());
+        thumbnail.unref();
+        
+        System.out.printf("Thumbnail generated in '%s'.%n", thumbnailFile.toString());                
         System.out.println("Done!");
     }
     
@@ -68,6 +71,7 @@ public class ImagePyramidExample {
             .container(DeepZoomContainer.FileSystem)
             .suffix(".jpg[Q=100]")
             .save();
+        image.unref();
         System.out.printf("Pyramid generated in folder '%s'.%n", directory.toString());
         System.out.println("Done.");
     }
@@ -98,10 +102,12 @@ public class LoggingExample {
     var thumbnail = image.thumbnail()
         .autoRotate()
         .create();
+    image.unref();
     thumbnail.jpeg()
         .quality(100)
         .strip()
         .save();
+    thumbnail.unref();
   }
 }
 ```

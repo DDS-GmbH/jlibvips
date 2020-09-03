@@ -1,7 +1,6 @@
 package org.jlibvips.util;
 
 import com.sun.jna.Pointer;
-import org.jlibvips.jna.VipsBindings;
 import org.jlibvips.jna.VipsBindingsSingleton;
 
 public class VipsUtils {
@@ -17,4 +16,5 @@ public class VipsUtils {
     public static Pointer toPointer(double[] array) {
         return VipsBindingsSingleton.instance().vips_array_double_new(array, array.length);
     }
+
 }

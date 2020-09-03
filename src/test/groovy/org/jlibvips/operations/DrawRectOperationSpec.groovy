@@ -10,10 +10,6 @@ import static org.jlibvips.TestUtils.copyResourceToFS
 
 class DrawRectOperationSpec extends Specification {
 
-    def setupSpec() {
-        VipsBindingsSingleton.configure("/usr/local/lib/libvips.so")
-    }
-
     def "Draw a rectangular black border with a thickness of 10 pixel to a 500 by 500 Jpeg."() {
         given:
         def imagePath = copyResourceToFS "500x500.jpg"
@@ -30,6 +26,7 @@ class DrawRectOperationSpec extends Specification {
         then:
         image.bands == 1
         cleanup:
+        image.unref()
         Files.deleteIfExists imagePath
     }
 

@@ -22,6 +22,7 @@ class VipsImageSpec extends Specification {
         image.width == width
         image.height == height
         cleanup:
+        image.unref()
         Files.deleteIfExists(file)
         where:
         resource      | width | height
@@ -37,6 +38,7 @@ class VipsImageSpec extends Specification {
         image.width <= VipsImage.POPPLER_CAIRO_LIMIT
         image.height <= VipsImage.POPPLER_CAIRO_LIMIT
         cleanup:
+        image.unref()
         Files.deleteIfExists(pdfFile)
         where:
         pdfResource | pageNumber
@@ -52,6 +54,7 @@ class VipsImageSpec extends Specification {
         then: "the number of bands is accessible"
         image.bands == bands
         cleanup:
+        image.unref()
         Files.deleteIfExists(file)
         where:
         resource      | bands
@@ -77,6 +80,7 @@ class VipsImageSpec extends Specification {
         then: "generates an image pyramid on the file system"
         Files.exists outDir.resolve("0/0/0.jpg")
         cleanup:
+        image.unref()
         Files.deleteIfExists(file)
         outDir.toFile().deleteDir()
         where:
@@ -90,6 +94,7 @@ class VipsImageSpec extends Specification {
         def image = VipsImage.fromFile(file)
         when: "calling .thumbnail()"
         def thumbnail = image.thumbnail(thumbnailWidth)
+                .height(100)
                 .autoRotate()
                 .size(VipsSize.Nearest)
                 .crop(VipsInteresting.Attention)
@@ -99,6 +104,8 @@ class VipsImageSpec extends Specification {
         thumbnail.width == thumbnailWidth
         thumbnail.height == thumbnailHeight
         cleanup:
+        image.unref()
+        thumbnail.unref()
         Files.deleteIfExists file
         where:
         resource      | thumbnailWidth | thumbnailHeight
@@ -122,6 +129,7 @@ class VipsImageSpec extends Specification {
         then: "the resulting image is stored as JPEG to a temporary file location"
         Files.exists jpegFile
         cleanup:
+        image.unref()
         Files.deleteIfExists file
         Files.deleteIfExists jpegFile
         where:
@@ -143,6 +151,7 @@ class VipsImageSpec extends Specification {
         then: "the image is stored as WEBP to a temporary file location"
         Files.exists webpFile
         cleanup:
+        image.unref()
         Files.deleteIfExists file
         Files.deleteIfExists webpFile
         where:
@@ -159,6 +168,7 @@ class VipsImageSpec extends Specification {
         then: "the image is stored in Vips Image Format to a temporary file location"
         Files.exists vFile
         cleanup:
+        image.unref()
         Files.deleteIfExists file
         Files.deleteIfExists vFile
         where:
@@ -174,6 +184,9 @@ class VipsImageSpec extends Specification {
         then: "expect a new image with size 250x250"
         area.width == 250
         area.height == 250
+        cleanup:
+        image.unref()
+        area.unref()
         where:
         resource << ["500x500.jpg"]
     }
@@ -190,6 +203,9 @@ class VipsImageSpec extends Specification {
         then: "expect a image with size 100x50"
         resizedImage.width == 100
         resizedImage.height == 50
+        cleanup:
+        image.unref()
+        resizedImage.unref()
         where:
         resource << ["500x500.jpg"]
     }
@@ -206,6 +222,9 @@ class VipsImageSpec extends Specification {
         then: "expect an image with size 1000x1000"
         extendedImage.width == 1000
         extendedImage.height == 1000
+        cleanup:
+        image.unref()
+        extendedImage.unref()
         where:
         resource << ["500x500.jpg"]
     }

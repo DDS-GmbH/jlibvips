@@ -25,6 +25,7 @@ public class ThumbnailOperation {
     private final VipsImage image;
     private final int width;
 
+    private Integer height;
     private Boolean autoRotate;
     private VipsSize size;
     private VipsInteresting crop;
@@ -45,6 +46,7 @@ public class ThumbnailOperation {
         Pointer[] pointers = new Pointer[1];
         int ret = VipsBindingsSingleton.instance().vips_thumbnail_image(image.getPtr(), pointers, width,
                 new Varargs().add("auto_rotate", booleanToInteger(autoRotate))
+                        .add("height", height)
                         .add("size", toOrdinal(size))
                         .add("crop", toOrdinal(crop))
                         .add("linear", booleanToInteger(linear))
@@ -53,6 +55,17 @@ public class ThumbnailOperation {
             throw new FailedOnThumbnailException(ret);
         }
         return new VipsImage(pointers[0]);
+    }
+
+    /**
+     * target height in pixels
+     *
+     * @param height target height in pixels
+     * @return this
+     */
+    public ThumbnailOperation height(int height) {
+        this.height = height;
+        return this;
     }
 
     /**

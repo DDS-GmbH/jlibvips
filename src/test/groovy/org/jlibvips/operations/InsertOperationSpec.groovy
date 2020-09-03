@@ -10,10 +10,6 @@ import static org.jlibvips.TestUtils.*
 
 class InsertOperationSpec extends Specification {
 
-    def setupSpec() {
-        VipsBindingsSingleton.configure("/usr/local/lib/libvips.so")
-    }
-
     def "Should insert a 500x500 JPEG into a full HD png on it's lower right corner."() {
         given:
         def baseImagePath = copyResourceToFS("1920x1080.png")
@@ -35,6 +31,8 @@ class InsertOperationSpec extends Specification {
         image.width == 2170
         image.height == 1330
         cleanup:
+        smallImage.unref()
+        baseImage.unref()
         Files.deleteIfExists baseImagePath
         Files.deleteIfExists smallImagePath
     }

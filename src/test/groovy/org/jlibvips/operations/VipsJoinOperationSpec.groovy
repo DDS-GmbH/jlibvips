@@ -10,10 +10,6 @@ import java.nio.file.Files
 
 class VipsJoinOperationSpec extends Specification {
 
-    def setupSpec() {
-        VipsBindingsSingleton.configure("/usr/local/lib/libvips.so")
-    }
-
     def "Join images together."() {
         given:
         def if1 = TestUtils.copyResourceToFS(in1)
@@ -27,6 +23,9 @@ class VipsJoinOperationSpec extends Specification {
         then:
         image != null
         cleanup:
+        image1.unref()
+        image2.unref()
+        image.unref()
         Files.deleteIfExists if1
         Files.deleteIfExists if2
         where:
