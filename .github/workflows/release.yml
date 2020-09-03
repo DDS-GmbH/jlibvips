@@ -15,4 +15,4 @@ jobs:
           java-version: 8
       - uses: eskatos/gradle-command-action@v1
         with:
-          arguments: build -x test -x check publish
+          arguments: build -x test -x check -x sign publish
