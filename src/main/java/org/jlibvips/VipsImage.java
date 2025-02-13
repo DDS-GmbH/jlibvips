@@ -409,6 +409,17 @@ public class VipsImage implements Closeable {
     }
 
     /**
+     * Fetch and sanity-check VIPS_META_ORIENTATION. Default to 1 (no rotate, no flip) if not present or crazy.
+     *
+     * @return the image orientation
+     * @see <a href="https://www.libvips.org/API/current/libvips-header.html#vips-image-get-orientation">vips_image_get_orientation()</a>
+     * @see <a href="https://www.libvips.org/API/current/libvips-header.html#VIPS-META-ORIENTATION:CAPS">orientation</a>
+     */
+    public int getOrientation() {
+        return VipsBindingsSingleton.instance().vips_image_get_orientation(ptr);
+    }
+
+    /**
      * Get the bands of this image.
      *
      * @return number of bands
