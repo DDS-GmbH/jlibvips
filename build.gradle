@@ -2,18 +2,19 @@ plugins {
     id 'java'
     id 'java-library'
     id 'signing'
-    id 'maven'
-    id 'com.github.johnrengelman.shadow' version '4.0.3'
+    id 'maven-publish'
+    id 'com.gradleup.shadow' version '8.3.6'
     id 'groovy'
-    id "net.java.openjdk.shinyafox.jshell.gradle.plugin" version "1.0.4"
+    id "net.java.openjdk.shinyafox.jshell.gradle.plugin" version "1.0.5"
+    id 'base'
 }
 
-group 'io.github.codecitizen'
-archivesBaseName = 'jlibvips'
-version '1.3.0.RELEASE'
+group = 'io.github.codecitizen'
+version = '1.3.0.RELEASE'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+base {
+    archivesName = 'jlibvips'
+}
 
 compileTestGroovy {
     sourceCompatibility = 1.10
@@ -26,28 +27,30 @@ repositories {
 
 dependencies {
     implementation group: 'net.java.dev.jna', name: 'jna', version: '5.1.0'
-    implementation 'org.codehaus.groovy:groovy:2.5.4'
+    implementation 'org.codehaus.groovy:groovy:2.5.23'
 
-    testCompile 'org.spockframework:spock-core:1.2-groovy-2.5'
+    testImplementation 'org.spockframework:spock-core:1.2-groovy-2.5'
 }
 
+
+//shouldn't this be done automatically by the shadow plugin?
 jar {
     manifest {
         attributes('Implementation-Title': project.name,
-                    'Implementation-Version': project.version)
+                'Implementation-Version': project.version)
     }
     from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
 
@@ -69,51 +72,58 @@ signing {
     sign configurations.archives
 }
 
-uploadArchives {
-    repositories {
-        if (!project.hasProperty('ossrhUsername') || !project.hasProperty('ossrhPassword')) {
-            println "skip uploadArchives"
-            return ;
-        }
-        mavenDeployer {
+publishing {
+    if (!project.hasProperty('ossrhUsername') || !project.hasProperty('ossrhPassword')) {
+        println "skip uploadArchives"
+        return
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            from project.components.java
 
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+            // Add Javadoc and Sources jars
+            artifact javadocJar
+            artifact sourcesJar
 
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-
-            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-
-            pom.project {
-                name 'jlibvips'
-                packaging 'jar'
-                // optionally artifactId can be defined here
-                description 'A Java interface to llibvips, the fast image processing library with low memory needs.'
-                url 'https://github.com/codecitizen/jlibvips'
+            pom {
+                name = 'jlibvips'
+                packaging = 'jar'
+                description = 'A Java interface to llibvips, the fast image processing library with low memory needs.'
+                url = 'https://github.com/codecitizen/jlibvips'
 
                 scm {
-                    connection 'https://github.com/codecitizen/jlibvips'
-                    developerConnection 'https://github.com/codecitizen/jlibvips'
-                    url 'https://github.com/codecitizen/jlibvips'
+                    connection = 'https://github.com/codecitizen/jlibvips.git'
+                    developerConnection = 'https://github.com:codecitizen/jlibvips.git'
+                    url = 'https://github.com/codecitizen/jlibvips'
                 }
 
                 licenses {
                     license {
-                        name 'MIT'
-                        url 'https://opensource.org/licenses/MIT'
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                        distribution = 'repo'
                     }
                 }
 
                 developers {
                     developer {
-                        id 'codecitizen'
-                        name 'Alexander Partsch'
-                        email 'alexander@partsch.ninja'
+                        id = 'codecitizen'
+                        name = 'Alexander Partsch'
+                        email = 'alexander@partsch.ninja'
                     }
                 }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            def releasesRepoUrl =  'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl ='https://oss.sonatype.org/content/repositories/snapshots/'
+            url = project.hasProperty('release') ? releasesRepoUrl : snapshotsRepoUrl
+            credentials {
+                username = ossrhUsername
+                password = ossrhPassword
             }
         }
     }
