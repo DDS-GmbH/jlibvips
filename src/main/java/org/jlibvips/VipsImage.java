@@ -434,7 +434,7 @@ public class VipsImage implements Closeable {
     }
 
     public int yoffset() {
-        return VipsBindingsSingleton.instance().vips_image_get_xoffset(ptr);
+        return VipsBindingsSingleton.instance().vips_image_get_yoffset(ptr);
     }
 
     public double xres() {
