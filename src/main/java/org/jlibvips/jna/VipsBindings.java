@@ -12,6 +12,7 @@ public interface VipsBindings extends Library {
 
     int vips_image_get_width(Pointer pointer);
     int vips_image_get_height(Pointer pointer);
+    int vips_image_get_orientation(Pointer pointer);
 
     int vips_image_get_bands(Pointer pointer);
 

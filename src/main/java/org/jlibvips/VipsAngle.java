@@ -20,27 +20,26 @@ public enum VipsAngle {
      * @return the {@link VipsAngle}
      */
     public static VipsAngle fromInteger(int value) {
-        switch (value) {
-            case 0: return D0;
-            case 90: return D90;
-            case 180: return D180;
-            case 270: return D270;
-            default:
-                throw new IllegalArgumentException("Allowed VipsAngle's are [0°, 90°, 180°, 270°].");
-        }
+        return switch (value) {
+            case 0 -> D0;
+            case 90 -> D90;
+            case 180 -> D180;
+            case 270 -> D270;
+            default -> throw new IllegalArgumentException("Allowed VipsAngle's are [0°, 90°, 180°, 270°].");
+        };
     }
 
 
     public double toDouble() {
-        switch (this) {
-            case D90:
-                return 90.0;
-            case D180:
-                return 180.0;
-            case D270:
-                return 270.0;
-            default:
-                return 0.0;
-        }
+        return switch (this) {
+            case D90 -> 90.0;
+            case D180 -> 180.0;
+            case D270 -> 270.0;
+            default -> 0.0;
+        };
+    }
+
+    public VipsAngle add(VipsAngle other) {
+        return fromInteger((int) (toDouble() + other.toDouble() % 360));
     }
 }
