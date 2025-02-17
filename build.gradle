@@ -10,7 +10,7 @@ plugins {
 }
 
 group = 'io.github.codecitizen'
-version = '1.3.0.RELEASE'
+version = '1.4.0-beta.1'
 
 base {
     archivesName = 'jlibvips'
@@ -73,10 +73,6 @@ signing {
 }
 
 publishing {
-    if (!project.hasProperty('ossrhUsername') || !project.hasProperty('ossrhPassword')) {
-        println "skip uploadArchives"
-        return
-    }
     publications {
         mavenJava(MavenPublication) {
             from project.components.java
@@ -117,6 +113,10 @@ publishing {
     }
 
     repositories {
+        if (!project.hasProperty('ossrhUsername') || !project.hasProperty('ossrhPassword')) {
+            println "skip uploadArchives"
+            return
+        }
         maven {
             def releasesRepoUrl =  'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
             def snapshotsRepoUrl ='https://oss.sonatype.org/content/repositories/snapshots/'
