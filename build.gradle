@@ -10,7 +10,7 @@ plugins {
 }
 
 group = 'io.github.codecitizen'
-version = '1.4.0-beta.1'
+version = '1.4.0'
 
 base {
     archivesName = 'jlibvips'
