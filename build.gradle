@@ -113,17 +113,12 @@ publishing {
     }
 
     repositories {
-        if (!project.hasProperty('ossrhUsername') || !project.hasProperty('ossrhPassword')) {
-            println "skip uploadArchives"
-            return
-        }
         maven {
-            def releasesRepoUrl =  'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-            def snapshotsRepoUrl ='https://oss.sonatype.org/content/repositories/snapshots/'
-            url = project.hasProperty('release') ? releasesRepoUrl : snapshotsRepoUrl
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/DDS-GmbH/jlibvips")
             credentials {
-                username = ossrhUsername
-                password = ossrhPassword
+                username = project.findProperty("gpr.gh.user") ?: System.getenv("GITHUB_USERNAME")
+                password = project.findProperty("gpr.gh.token") ?: System.getenv("GITHUB_TOKEN")
             }
         }
     }
