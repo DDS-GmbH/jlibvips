@@ -25,7 +25,23 @@ public enum VipsAngle {
             case 90 -> D90;
             case 180 -> D180;
             case 270 -> D270;
-            default -> throw new IllegalArgumentException("Allowed VipsAngle's are [0°, 90°, 180°, 270°].");
+            default -> throw new IllegalArgumentException("Allowed VipsAngle's are [0°, 90°, 180°, 270°], not %s.".formatted(value));
+        };
+    }
+
+    /**
+     * Creates a {@link VipsAngle} based on the <a href="https://www.libvips.org/API/current/libvips-header.html#VIPS-META-ORIENTATION:CAPS">vips meta orientation</a>.
+     *
+     * @param value degrees
+     * @return the {@link VipsAngle}
+     */
+    public static VipsAngle fromMetaOrientation(int value) {
+        return switch (value) {
+          case 1, 2 -> D0;
+          case 3, 4 -> D180;
+          case 5, 6 -> D270;
+          case 7, 8 -> D90;
+          default -> throw new IllegalArgumentException("Allowed VipsMetagAngle's are [1-8], not %s.".formatted(value));
         };
     }
 

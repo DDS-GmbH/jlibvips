@@ -416,7 +416,7 @@ public class VipsImage implements Closeable {
      * @see <a href="https://www.libvips.org/API/current/libvips-header.html#VIPS-META-ORIENTATION:CAPS">orientation</a>
      */
     public VipsAngle getOrientation() {
-        return VipsAngle.fromInteger(VipsBindingsSingleton.instance().vips_image_get_orientation(ptr));
+        return VipsAngle.fromMetaOrientation(VipsBindingsSingleton.instance().vips_image_get_orientation(ptr));
     }
 
     /**

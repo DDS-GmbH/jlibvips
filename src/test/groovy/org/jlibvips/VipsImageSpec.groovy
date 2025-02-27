@@ -1,11 +1,12 @@
 package org.jlibvips
 
-import org.jlibvips.jna.VipsBindingsSingleton
+
 import spock.lang.Specification
 
 import java.nio.file.Files
 
-import static TestUtils.*
+import static org.jlibvips.TestUtils.copyResourceToFS
+import static org.jlibvips.TestUtils.newTempDir
 
 class VipsImageSpec extends Specification {
 
@@ -56,6 +57,25 @@ class VipsImageSpec extends Specification {
         resource      | bands
         "500x500.jpg" | 1
     }
+
+    def "get orientation of image"() {
+        given: "a arbitrary image file"
+        def file = copyResourceToFS(resource)
+        when: "loading it as VipsImage"
+        def image = VipsImage.fromFile(file)
+        then: "the orientation should be as original"
+        image.orientation == orientation
+        cleanup:
+        image.unref()
+        Files.deleteIfExists(file)
+        where:
+        resource                    | orientation
+        "900x700.png"               | VipsAngle.D0
+        "900x700_rotated_left.jpg"  | VipsAngle.D270
+        "900x700_rotated_right.jpg" | VipsAngle.D90
+        "900x700_flipped.jpg"       | VipsAngle.D180
+    }
+
 
     def "creating image pyramids"() {
         given: "a VipsImage"
