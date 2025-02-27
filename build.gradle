@@ -8,8 +8,14 @@ plugins {
     id 'base'
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
 group = 'io.github.codecitizen'
-version = '1.4.0'
+version = '1.4.1'
 
 base {
     archivesName = 'jlibvips'
