@@ -56,6 +56,6 @@ public enum VipsAngle {
     }
 
     public VipsAngle add(VipsAngle other) {
-        return fromInteger((int) (toDouble() + other.toDouble() % 360));
+        return fromInteger((int) (toDouble() + other.toDouble()) % 360);
     }
 }
