@@ -72,12 +72,12 @@ class Drawing extends Specification {
         def tinted = image
                 .flatten().background(whiteRgb).flatten()
                 .colorspace().space(VipsInterpretation.B_W)
-                .maplut(lut);
+                .maplut(lut)
 
         then:
         tinted != null
         println tinted
-        def dest = Paths.get("/Volumes/HD/backups/images/${colorName}.png")
+        def dest = Files.createTempFile(colorName, "png")
         Files.move(tinted.png().save(), dest, StandardCopyOption.REPLACE_EXISTING)
         cleanup:
         Files.deleteIfExists imagePath
