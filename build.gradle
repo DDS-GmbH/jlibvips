@@ -15,7 +15,7 @@ java {
 }
 
 group = 'io.github.codecitizen'
-version = '1.4.3'
+version = '1.4.4-alpha.4'
 
 base {
     archivesName = 'jlibvips'
@@ -31,10 +31,10 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'net.java.dev.jna', name: 'jna', version: '5.1.0'
-    implementation 'org.codehaus.groovy:groovy:2.5.23'
+    implementation group: 'net.java.dev.jna', name: 'jna', version: '5.17.0'
+    implementation 'org.apache.groovy:groovy:4.0.26'
 
-    testImplementation 'org.spockframework:spock-core:1.2-groovy-2.5'
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
 }
 
 
@@ -47,16 +47,23 @@ jar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
+    duplicatesStrategy = DuplicatesStrategy.WARN
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
+tasks.register('sourcesJar', Jar) {
+    dependsOn classes
     archiveClassifier = 'sources'
     from sourceSets.main.allSource
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
+tasks.register('javadocJar', Jar) {
+    dependsOn javadoc
     archiveClassifier = 'javadoc'
     from javadoc.destinationDir
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
 }
 
 javadoc {
