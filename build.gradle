@@ -15,7 +15,7 @@ java {
 }
 
 group = 'io.github.codecitizen'
-version = '1.4.4-alpha.4'
+version = '1.4.4'
 
 base {
     archivesName = 'jlibvips'
