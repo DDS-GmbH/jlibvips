@@ -9,6 +9,7 @@ public interface VipsBindings extends Library {
     Pointer vips_image_new_from_buffer(byte[] buf, long length, String optionString, Object...args);
 
     int vips_pdfload(String fileName, Pointer[] pointer, Object...args);
+    int vips_pdfload_buffer(byte[] buf, long length, Pointer[] pointer, Object...args);
 
     int vips_image_get_width(Pointer pointer);
     int vips_image_get_height(Pointer pointer);

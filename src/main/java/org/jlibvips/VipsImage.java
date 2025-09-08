@@ -82,6 +82,54 @@ public class VipsImage implements Closeable {
     }
 
     /**
+     * Loads a PDF document's page from a memory buffer as {@link VipsImage} in the greatest possible resolution.
+     *
+     * @param buffer byte array containing the PDF data
+     * @param page page number (starting at 0)
+     * @param scale scale factor
+     * @return the PDF page as {@link VipsImage}
+     */
+    public static VipsImage fromPdfBuffer(byte[] buffer, int page, float scale) {
+        // Due to excessive testing we set 6 to be the maximum scale parameter and decrease by 0.1 until we reach a
+        // scale working with the limit.
+        VipsImage image = null;
+        do {
+            Pointer[] ptr = new Pointer[1];
+            int ret = VipsBindingsSingleton.instance().vips_pdfload_buffer(buffer, buffer.length, ptr, "scale", scale, "page", page, null);
+            if (ret != 0) {
+                throw new CouldNotLoadPdfVipsException(ret);
+            }
+            if (image != null) {
+                image.unref();
+            }
+            image = new VipsImage(ptr[0]);
+            scale -= 0.1f;
+        } while (image.getWidth() > POPPLER_CAIRO_LIMIT || image.getHeight() > POPPLER_CAIRO_LIMIT);
+        return image;
+    }
+
+    /**
+     * Loads a PDF document's page from a memory buffer as {@link VipsImage} in the greatest possible resolution.
+     *
+     * @param buffer byte array containing the PDF data
+     * @param page page number (starting at 0)
+     * @return the PDF page as {@link VipsImage}
+     */
+    public static VipsImage fromPdfBuffer(byte[] buffer, int page) {
+        return fromPdfBuffer(buffer, page, 6.0f);
+    }
+
+    /**
+     * Loads a PDF document's first page from a memory buffer as {@link VipsImage} in the greatest possible resolution.
+     *
+     * @param buffer byte array containing the PDF data
+     * @return the PDF page as {@link VipsImage}
+     */
+    public static VipsImage fromPdfBuffer(byte[] buffer) {
+        return fromPdfBuffer(buffer, 1);
+    }
+
+    /**
      * Creates a new {@link VipsImage} from a {@link Path} to an image or PDF file.
      *
      * @param p {@link Path} to image file.

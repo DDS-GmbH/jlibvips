@@ -43,6 +43,28 @@ class VipsImageSpec extends Specification {
         "2page.pdf" | 1
     }
 
+    def "loading vectorised PDFs from memory buffer"() {
+        given: "a large vectorised PDF loaded into memory"
+        def pdfFile = copyResourceToFS(pdfResource)
+        def pdfBytes = Files.readAllBytes(pdfFile)
+
+        when: "loading it as a vips image from buffer"
+        def image = VipsImage.fromPdfBuffer(pdfBytes, pageNumber)
+
+        then: "the height should not exceed the limits imposed by libpoppler (32767)"
+        image.width <= VipsImage.POPPLER_CAIRO_LIMIT
+        image.height <= VipsImage.POPPLER_CAIRO_LIMIT
+
+        cleanup:
+        image.unref()
+        Files.deleteIfExists(pdfFile)
+
+        where:
+        pdfResource | pageNumber
+        "1.pdf"     | 0
+        "2page.pdf" | 1
+    }
+
     def "get bands of image"() {
         given: "a arbitrary image file"
         def file = copyResourceToFS(resource)
