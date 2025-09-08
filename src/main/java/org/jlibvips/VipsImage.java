@@ -45,7 +45,10 @@ public class VipsImage implements Closeable {
         // Due to excessive testing we set 6 to be the maximum scale parameter and decrease by 0.1 until we reach a
         // scale working with the limit.
         VipsImage image = null;
+        int attempts = 0;
+        float initialScale = scale;
         do {
+            attempts++;
             Pointer[] ptr = new Pointer[1];
             int ret = VipsBindingsSingleton.instance().vips_pdfload(p.toString(), ptr, "scale", scale, "page", page, null);
             if (ret != 0) {
@@ -55,8 +58,10 @@ public class VipsImage implements Closeable {
                 image.unref();
             }
             image = new VipsImage(ptr[0]);
+            System.out.println("PDF load attempt " + attempts + " with scale " + scale + " - image size: " + image.getWidth() + "x" + image.getHeight());
             scale -= 0.1f;
         } while (image.getWidth() > POPPLER_CAIRO_LIMIT || image.getHeight() > POPPLER_CAIRO_LIMIT);
+        System.out.println("Successfully loaded PDF after " + attempts + " attempts. Initial scale: " + initialScale + ", final scale: " + (scale + 0.1f));
         return image;
     }
 
@@ -93,7 +98,10 @@ public class VipsImage implements Closeable {
         // Due to excessive testing we set 6 to be the maximum scale parameter and decrease by 0.1 until we reach a
         // scale working with the limit.
         VipsImage image = null;
+        int attempts = 0;
+        float initialScale = scale;
         do {
+            attempts++;
             Pointer[] ptr = new Pointer[1];
             int ret = VipsBindingsSingleton.instance().vips_pdfload_buffer(buffer, buffer.length, ptr, "scale", scale, "page", page, null);
             if (ret != 0) {
@@ -103,8 +111,10 @@ public class VipsImage implements Closeable {
                 image.unref();
             }
             image = new VipsImage(ptr[0]);
+            System.out.println("PDF buffer load attempt " + attempts + " with scale " + scale + " - image size: " + image.getWidth() + "x" + image.getHeight());
             scale -= 0.1f;
         } while (image.getWidth() > POPPLER_CAIRO_LIMIT || image.getHeight() > POPPLER_CAIRO_LIMIT);
+        System.out.println("Successfully loaded PDF from buffer after " + attempts + " attempts. Initial scale: " + initialScale + ", final scale: " + (scale + 0.1f));
         return image;
     }
 
