@@ -176,7 +176,10 @@ public class VipsImage implements Closeable {
         float limitScale = Math.min(widthScale, heightScale);
 
         // Calculate the new scale based on the linear relationship
-        float newScale = initialScale * limitScale * 0.95f; // Add a 5% safety margin
+        // Simulate the behavior of fromPdfBuffer by finding the closest scale that would be tried
+        // by the decremental approach (which decreases by 0.1 each time)
+        float calculatedScale = initialScale * limitScale; // Add a 5% safety margin
+        float newScale = (float) (Math.floor(calculatedScale * 10) / 10.0); // Round down to nearest 0.1
 
         // Release the first image
         image.unref();
@@ -200,7 +203,8 @@ public class VipsImage implements Closeable {
             widthScale = (float) POPPLER_CAIRO_LIMIT / width;
             heightScale = (float) POPPLER_CAIRO_LIMIT / height;
             limitScale = Math.min(widthScale, heightScale);
-            float finalScale = newScale * limitScale * 0.95f; // Add a 5% safety margin
+            float calculatedFinalScale = newScale * limitScale * 0.95f; // Add a 5% safety margin
+            float finalScale = (float) (Math.floor(calculatedFinalScale * 10) / 10.0); // Round down to nearest 0.1
 
             // Release the second image
             image.unref();
