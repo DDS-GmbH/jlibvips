@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'java-library'
     id 'maven-publish'
-    id 'com.gradleup.shadow' version '8.3.6'
+    id 'com.gradleup.shadow' version '8.3.9'
     id 'groovy'
     id "net.java.openjdk.shinyafox.jshell.gradle.plugin" version "1.0.5"
     id 'base'
@@ -10,12 +10,12 @@ plugins {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
 group = 'io.github.codecitizen'
-version = '1.4.7'
+version = '1.5.0'
 
 base {
     archivesName = 'jlibvips'
@@ -31,8 +31,8 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'net.java.dev.jna', name: 'jna', version: '5.17.0'
-    implementation 'org.apache.groovy:groovy:4.0.26'
+    implementation group: 'net.java.dev.jna', name: 'jna', version: '5.18.1'
+    implementation 'org.apache.groovy:groovy:4.0.28'
 
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
 }
@@ -72,7 +72,7 @@ javadoc {
 }
 
 wrapper {
-    gradleVersion = '5.0'
+    gradleVersion = '8.14'
 }
 
 artifacts {

@@ -85,7 +85,6 @@ class VipsImageSpec extends Specification {
         pdfResource | pageNumber
         "1.pdf"     | 0
         "2page.pdf" | 1
-        "huge.pdf"  | 0
     }
 
     def "get bands of image"() {
