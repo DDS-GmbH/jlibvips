@@ -5,6 +5,12 @@ public class VipsException extends RuntimeException {
     private final String operation;
     private final int returnValue;
 
+    public VipsException(String operation, String message) {
+        super(String.format("VipsBindings operations %s failed: %s".formatted(operation, message)));
+        this.operation = operation;
+        returnValue = -1;
+    }
+
     public VipsException(String operation, int returnValue) {
         super(String.format("VipsBindings operation %s returned error code %d.", operation, returnValue));
         this.operation = operation;

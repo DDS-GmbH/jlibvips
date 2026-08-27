@@ -23,7 +23,7 @@ public class Varargs {
 
     public Varargs add(String name, Object value) {
         if(name != null && value != null)
-        arguments.put(name, value);
+            arguments.put(name, value);
         return this;
     }
 
