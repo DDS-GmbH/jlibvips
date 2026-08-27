@@ -1,8 +1,9 @@
 package org.jlibvips.operations;
 
+import com.sun.jna.Pointer;
+import java.util.List;
 import org.jlibvips.VipsImage;
 import org.jlibvips.exceptions.VipsException;
-import org.jlibvips.jna.VipsBindings;
 import org.jlibvips.jna.VipsBindingsSingleton;
 import org.jlibvips.util.Varargs;
 import org.jlibvips.util.VipsUtils;
@@ -23,6 +24,7 @@ public class JpegSaveOperation implements SaveOperation {
     private Boolean trellisQuant;
     private Boolean overshootDeringing;
     private Boolean optimizeScans;
+    private Pointer background;
 
     public JpegSaveOperation(VipsImage image) {
         this.image = image;
@@ -39,7 +41,8 @@ public class JpegSaveOperation implements SaveOperation {
                         .add("no_subsample", VipsUtils.booleanToInteger(noSubsample))
                         .add("trellis_quant", VipsUtils.booleanToInteger(trellisQuant))
                         .add("overshoot_deringing", VipsUtils.booleanToInteger(overshootDeringing))
-                        .add("optimize_scans", VipsUtils.booleanToInteger(optimizeScans)).toArray());
+                        .add("optimize_scans", VipsUtils.booleanToInteger(optimizeScans))
+                        .add("background", background).toArray());
         if(ret != 0) {
             throw new VipsException("vips_jpegsave", ret);
         }
@@ -127,4 +130,13 @@ public class JpegSaveOperation implements SaveOperation {
         return this;
     }
 
+    public JpegSaveOperation background(List<Float> background) {
+        return background(background != null? background.stream().mapToDouble(Float::doubleValue).toArray() : null);
+    }
+
+    public JpegSaveOperation background(double[] background) {
+        this.background = background != null?
+            VipsUtils.toPointer(background) : null;
+        return this;
+    }
 }
