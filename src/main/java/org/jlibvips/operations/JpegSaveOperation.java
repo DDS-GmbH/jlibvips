@@ -135,6 +135,8 @@ public class JpegSaveOperation implements SaveOperation {
     }
 
     public JpegSaveOperation background(double[] background) {
+        if (background != null && background.length != 3)
+            throw new VipsException("jpeg_save", "background must have a length of 3 for JPEG save");
         this.background = background != null?
             VipsUtils.toPointer(background) : null;
         return this;
