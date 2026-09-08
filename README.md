@@ -57,12 +57,12 @@ public class PDFThumbnailExample {
 libvips renders a PDF page at `page size in points * scale` pixels. `VipsImage.fromPdf(path, page)` asks for scale 6 and, when the page would exceed 32767 pixels on a side (`VipsImage.POPPLER_CAIRO_LIMIT`), settles on the largest smaller scale, in steps of 0.1, at which it fits. `PdfPage.load(...)` does the same and also tells you that scale:
 
 ```java
-PdfPage page = PdfPage.load(Paths.get("plan.pdf"), 0); // or PdfPage.load(bytes, 0), optionally with a maximum scale
-System.out.printf("rendered at scale %s: %dx%d px%n", page.scale(), page.image().getWidth(), page.image().getHeight());
-page.image().unref();
+try (PdfPage page = PdfPage.load(Paths.get("plan.pdf"), 0)) { // or PdfPage.load(bytes, 0), optionally with a maximum scale
+    System.out.printf("rendered at scale %s: %dx%d px%n", page.scale(), page.image().getWidth(), page.image().getHeight());
+}
 ```
 
-A page takes at most two loads, and they bypass the libvips operation cache, so the parsed page is released with the image.
+A page takes at most two loads, and they bypass the libvips operation cache, so closing the page releases the parsed page.
 
 **Example: Create an Image Pyramid form a large PNG File.**
 

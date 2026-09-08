@@ -24,6 +24,7 @@ class PdfPageSpec extends Specification {
     static final int LIMIT = VipsImage.POPPLER_CAIRO_LIMIT
 
     List<Path> files = []
+    List<PdfPage> pages = []
     List<VipsImage> images = []
     List<LogRecord> records = []
     Logger logger = Logger.getLogger(PdfPage.name)
@@ -43,6 +44,7 @@ class PdfPageSpec extends Specification {
         logger.removeHandler(handler)
         logger.useParentHandlers = true
         logger.level = null
+        pages.each { it.close() }
         images.each { it.unref() }
         files.each { Files.deleteIfExists(it) }
     }
@@ -197,6 +199,32 @@ class PdfPageSpec extends Specification {
         loaded.every { it.width == searched.width && it.height == searched.height }
     }
 
+    def "closing the page releases its image"() {
+        given:
+        def image = new ReleaseRecorder()
+        def page = new PdfPage(image, 1.0f)
+
+        when:
+        page.close()
+
+        then:
+        image.released
+    }
+
+    def "is released at the end of a try-with-resources block"() {
+        given:
+        def file = keep(pdf(width: 100, height: 100))
+
+        when:
+        int width
+        try (PdfPage page = PdfPage.load(file, 0)) {
+            width = page.image().width
+        }
+
+        then:
+        width == 600
+    }
+
     def "reports pages out of range"() {
         given:
         def file = keep(pdf(width: 100, height: 100))
@@ -258,7 +286,7 @@ class PdfPageSpec extends Specification {
     }
 
     private PdfPage keep(PdfPage page) {
-        images << page.image()
+        pages << page
         return page
     }
 
@@ -289,6 +317,22 @@ class PdfPageSpec extends Specification {
                 return result
             }
             scale = (float) (scale - 0.1f)
+        }
+    }
+
+    /**
+     * A VipsImage that records its release instead of handing a pointer to libvips.
+     */
+    private static class ReleaseRecorder extends VipsImage {
+        boolean released
+
+        ReleaseRecorder() {
+            super(Pointer.NULL)
+        }
+
+        @Override
+        void unref() {
+            released = true
         }
     }
 }

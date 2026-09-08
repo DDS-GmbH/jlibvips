@@ -118,7 +118,7 @@ public class VipsImage implements Closeable {
     /**
      * @deprecated delegates to {@link #fromPdfBuffer(byte[], int)}.
      */
-    @Deprecated
+    @Deprecated(since = "2026-09-08")
     public static VipsImage fromPdfBufferFast(byte[] buffer, int page) {
         return fromPdfBuffer(buffer, page);
     }
@@ -126,7 +126,7 @@ public class VipsImage implements Closeable {
     /**
      * @deprecated delegates to {@link #fromPdfBuffer(byte[])}.
      */
-    @Deprecated
+    @Deprecated(since = "2026-09-08")
     public static VipsImage fromPdfBufferFast(byte[] buffer) {
         return fromPdfBuffer(buffer);
     }
