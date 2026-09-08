@@ -11,6 +11,27 @@ public interface VipsBindings extends Library {
     int vips_pdfload(String fileName, Pointer[] pointer, Object...args);
     int vips_pdfload_buffer(byte[] buf, long length, Pointer[] pointer, Object...args);
 
+    // source loaders are never entered into the libvips operation cache
+    int vips_pdfload_source(Pointer source, Pointer[] out, Object...args);
+    Pointer vips_source_new_from_file(String filename);
+    Pointer vips_source_new_from_blob(Pointer blob);
+    // takes a copy of the data
+    Pointer vips_blob_copy(byte[] data, long length);
+    void vips_area_unref(Pointer area);
+
+    int vips_cache_get_size();
+    int vips_cache_get_max();
+    void vips_cache_set_max(int max);
+    long vips_cache_get_max_mem();
+    void vips_cache_set_max_mem(long maxMem);
+    int vips_cache_get_max_files();
+    void vips_cache_set_max_files(int maxFiles);
+    long vips_tracked_get_mem();
+    int vips_tracked_get_files();
+
+    String vips_error_buffer();
+    void vips_error_clear();
+
     int vips_image_get_width(Pointer pointer);
     int vips_image_get_height(Pointer pointer);
     int vips_image_get_orientation(Pointer pointer);

@@ -1,7 +1,6 @@
 package org.jlibvips;
 
 import com.sun.jna.Pointer;
-import org.jlibvips.exceptions.CouldNotLoadPdfVipsException;
 import org.jlibvips.exceptions.VipsException;
 import org.jlibvips.jna.VipsBindings;
 import org.jlibvips.jna.VipsBindingsSingleton;
@@ -30,10 +29,8 @@ import java.util.function.BiConsumer;
 public class VipsImage implements Closeable {
 
     /**
-     * This is the maximum resolution to which libvips can convert vectorised PDFs.
-     * <p>
-     * libvips builds on libpoppler which uses cairographics to draw the vectors on a canvas. cairos canvas is limited
-     * by 32767x32767 rows and therefore PDF pages loaded as {@link VipsImage} cannot be larger than that.
+     * The largest size in pixels, per side, at which PDF pages are rendered: cairo, which libvips' poppler loader
+     * draws with, cannot exceed 32767x32767 pixels. The PDFium loader keeps to it so pages render the same everywhere.
      *
      * @see <a href="https://poppler.freedesktop.org/">libpoppler</a>
      * @see <a href="https://www.cairographics.org/">cairo</a>
@@ -41,28 +38,17 @@ public class VipsImage implements Closeable {
      */
     public static final int POPPLER_CAIRO_LIMIT = 32767;
 
+    /**
+     * Loads a PDF document's page as {@link VipsImage} at {@code scale}, or the largest smaller scale at which it fits
+     * {@link #POPPLER_CAIRO_LIMIT}. {@link PdfPage#load(Path, int, float)} also returns the scale used.
+     *
+     * @param p     {@link Path} to the PDF document.
+     * @param page  page number (starting at 0)
+     * @param scale the scale to render at, unless the page would be too large
+     * @return the PDF page as {@link VipsImage}.
+     */
     public static VipsImage fromPdf(Path p, int page, float scale) {
-        // Due to excessive testing we set 6 to be the maximum scale parameter and decrease by 0.1 until we reach a
-        // scale working with the limit.
-        VipsImage image = null;
-        int attempts = 0;
-        float initialScale = scale;
-        do {
-            attempts++;
-            Pointer[] ptr = new Pointer[1];
-            int ret = VipsBindingsSingleton.instance().vips_pdfload(p.toString(), ptr, "scale", scale, "page", page, null);
-            if (ret != 0) {
-                throw new CouldNotLoadPdfVipsException(ret);
-            }
-            if (image != null) {
-                image.unref();
-            }
-            image = new VipsImage(ptr[0]);
-            System.out.println("PDF load attempt " + attempts + " with scale " + scale + " - image size: " + image.getWidth() + "x" + image.getHeight());
-            scale -= 0.1f;
-        } while (image.getWidth() > POPPLER_CAIRO_LIMIT || image.getHeight() > POPPLER_CAIRO_LIMIT);
-        System.out.println("Successfully loaded PDF after " + attempts + " attempts. Initial scale: " + initialScale + ", final scale: " + (scale + 0.1f));
-        return image;
+        return PdfPage.load(p, page, scale).image();
     }
 
     /**
@@ -73,7 +59,7 @@ public class VipsImage implements Closeable {
      * @return the PDF page as {@link VipsImage}.
      */
     public static VipsImage fromPdf(Path p, int page) {
-        return fromPdf(p, page, 6.0f);
+        return fromPdf(p, page, PdfPage.MAX_SCALE);
     }
 
     /**
@@ -87,50 +73,31 @@ public class VipsImage implements Closeable {
     }
 
     /**
-     * Loads a PDF document's page from a memory buffer as {@link VipsImage} in the greatest possible resolution.
+     * Loads a PDF document's page from a memory buffer as {@link VipsImage} at {@code scale}, or the largest smaller
+     * scale at which it fits {@link #POPPLER_CAIRO_LIMIT}.
      *
      * @param buffer byte array containing the PDF data
-     * @param page page number (starting at 0)
-     * @param scale scale factor
+     * @param page   page number (starting at 0)
+     * @param scale  the scale to render at, unless the page would be too large
      * @return the PDF page as {@link VipsImage}
      */
     public static VipsImage fromPdfBuffer(byte[] buffer, int page, float scale) {
-        // Due to excessive testing we set 6 to be the maximum scale parameter and decrease by 0.1 until we reach a
-        // scale working with the limit.
-        VipsImage image = null;
-        int attempts = 0;
-        float initialScale = scale;
-        do {
-            attempts++;
-            Pointer[] ptr = new Pointer[1];
-            int ret = VipsBindingsSingleton.instance().vips_pdfload_buffer(buffer, buffer.length, ptr, "scale", scale, "page", page, null);
-            if (ret != 0) {
-                throw new CouldNotLoadPdfVipsException(ret);
-            }
-            if (image != null) {
-                image.unref();
-            }
-            image = new VipsImage(ptr[0]);
-            System.out.println("PDF buffer load attempt " + attempts + " with scale " + scale + " - image size: " + image.getWidth() + "x" + image.getHeight());
-            scale -= 0.1f;
-        } while (image.getWidth() > POPPLER_CAIRO_LIMIT || image.getHeight() > POPPLER_CAIRO_LIMIT);
-        System.out.println("Successfully loaded PDF from buffer after " + attempts + " attempts. Initial scale: " + initialScale + ", final scale: " + (scale + 0.1f));
-        return image;
+        return PdfPage.load(buffer, page, scale).image();
     }
 
     /**
      * Loads a PDF document's page from a memory buffer as {@link VipsImage} in the greatest possible resolution.
      *
      * @param buffer byte array containing the PDF data
-     * @param page page number (starting at 0)
+     * @param page   page number (starting at 0)
      * @return the PDF page as {@link VipsImage}
      */
     public static VipsImage fromPdfBuffer(byte[] buffer, int page) {
-        return fromPdfBuffer(buffer, page, 6.0f);
+        return fromPdfBuffer(buffer, page, PdfPage.MAX_SCALE);
     }
 
     /**
-     * Loads a PDF document's first page from a memory buffer as {@link VipsImage} in the greatest possible resolution.
+     * Loads a PDF document's page from a memory buffer as {@link VipsImage} in the greatest possible resolution.
      *
      * @param buffer byte array containing the PDF data
      * @return the PDF page as {@link VipsImage}
@@ -140,109 +107,28 @@ public class VipsImage implements Closeable {
     }
 
     /**
-     * Loads a PDF document's page from a memory buffer as {@link VipsImage} in the greatest possible resolution
-     * using an optimized algorithm that reduces the number of PDF loading attempts.
-     *
-     * @param buffer byte array containing the PDF data
-     * @param page page number (starting at 0)
-     * @param initialScale initial scale factor to try
-     * @return the PDF page as {@link VipsImage}
+     * @deprecated delegates to {@link #fromPdfBuffer(byte[], int, float)}, which is as fast and settles on the same
+     * scale as {@link #fromPdf(Path, int, float)}.
      */
+    @Deprecated
     public static VipsImage fromPdfBufferFast(byte[] buffer, int page, float initialScale) {
-        System.out.println("Using optimized PDF buffer loading algorithm");
-
-        // First attempt with initial scale
-        Pointer[] ptr = new Pointer[1];
-        int ret = VipsBindingsSingleton.instance().vips_pdfload_buffer(buffer, buffer.length, ptr, "scale", initialScale, "page", page, null);
-        if (ret != 0) {
-            throw new CouldNotLoadPdfVipsException(ret);
-        }
-
-        VipsImage image = new VipsImage(ptr[0]);
-        int width = image.getWidth();
-        int height = image.getHeight();
-
-        System.out.println("PDF buffer fast load attempt 1 with scale " + initialScale + " - image size: " + width + "x" + height);
-
-        // If dimensions are within limits, return the image
-        if (width <= POPPLER_CAIRO_LIMIT && height <= POPPLER_CAIRO_LIMIT) {
-            System.out.println("Successfully loaded PDF from buffer on first attempt with scale: " + initialScale);
-            return image;
-        }
-
-        // Calculate the scale factor needed to fit within limits
-        float widthScale = (float) POPPLER_CAIRO_LIMIT / width;
-        float heightScale = (float) POPPLER_CAIRO_LIMIT / height;
-        float limitScale = Math.min(widthScale, heightScale);
-
-        // Calculate the new scale based on the linear relationship
-        float newScale = initialScale * limitScale * 0.95f; // Add a 5% safety margin
-
-        // Release the first image
-        image.unref();
-
-        // Second attempt with calculated scale
-        ptr = new Pointer[1];
-        ret = VipsBindingsSingleton.instance().vips_pdfload_buffer(buffer, buffer.length, ptr, "scale", newScale, "page", page, null);
-        if (ret != 0) {
-            throw new CouldNotLoadPdfVipsException(ret);
-        }
-
-        image = new VipsImage(ptr[0]);
-        width = image.getWidth();
-        height = image.getHeight();
-
-        System.out.println("PDF buffer fast load attempt 2 with scale " + newScale + " - image size: " + width + "x" + height);
-
-        // If dimensions are still too large, make one more adjustment
-        if (width > POPPLER_CAIRO_LIMIT || height > POPPLER_CAIRO_LIMIT) {
-            // Calculate a more conservative scale
-            widthScale = (float) POPPLER_CAIRO_LIMIT / width;
-            heightScale = (float) POPPLER_CAIRO_LIMIT / height;
-            limitScale = Math.min(widthScale, heightScale);
-            float finalScale = newScale * limitScale * 0.95f; // Add a 5% safety margin
-
-            // Release the second image
-            image.unref();
-
-            // Final attempt with adjusted scale
-            ptr = new Pointer[1];
-            ret = VipsBindingsSingleton.instance().vips_pdfload_buffer(buffer, buffer.length, ptr, "scale", finalScale, "page", page, null);
-            if (ret != 0) {
-                throw new CouldNotLoadPdfVipsException(ret);
-            }
-
-            image = new VipsImage(ptr[0]);
-            System.out.println("PDF buffer fast load attempt 3 with scale " + finalScale + " - image size: " + image.getWidth() + "x" + image.getHeight());
-            System.out.println("Successfully loaded PDF from buffer after 3 attempts. Final scale: " + finalScale);
-        } else {
-            System.out.println("Successfully loaded PDF from buffer after 2 attempts. Final scale: " + newScale);
-        }
-
-        return image;
+        return fromPdfBuffer(buffer, page, initialScale);
     }
 
     /**
-     * Loads a PDF document's page from a memory buffer as {@link VipsImage} in the greatest possible resolution
-     * using an optimized algorithm that reduces the number of PDF loading attempts.
-     *
-     * @param buffer byte array containing the PDF data
-     * @param page page number (starting at 0)
-     * @return the PDF page as {@link VipsImage}
+     * @deprecated delegates to {@link #fromPdfBuffer(byte[], int)}.
      */
+    @Deprecated
     public static VipsImage fromPdfBufferFast(byte[] buffer, int page) {
-        return fromPdfBufferFast(buffer, page, 6.0f);
+        return fromPdfBuffer(buffer, page);
     }
 
     /**
-     * Loads a PDF document's first page from a memory buffer as {@link VipsImage} in the greatest possible resolution
-     * using an optimized algorithm that reduces the number of PDF loading attempts.
-     *
-     * @param buffer byte array containing the PDF data
-     * @return the PDF page as {@link VipsImage}
+     * @deprecated delegates to {@link #fromPdfBuffer(byte[])}.
      */
+    @Deprecated
     public static VipsImage fromPdfBufferFast(byte[] buffer) {
-        return fromPdfBufferFast(buffer, 1);
+        return fromPdfBuffer(buffer);
     }
 
     /**
