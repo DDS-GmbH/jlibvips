@@ -133,7 +133,7 @@ public record PdfPage(VipsImage image, float scale) implements AutoCloseable {
       }
       return source;
     } finally {
-      vips.vips_area_unref(blob); // the source holds its own reference
+      vips.vips_area_unref(blob); // the blob is not needed anymore
     }
   }
 
