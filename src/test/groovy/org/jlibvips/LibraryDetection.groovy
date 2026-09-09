@@ -12,4 +12,9 @@ class LibraryDetection extends Specification {
         instance != null
     }
 
+    def "Initialise libvips as soon as the library is loaded."() {
+        expect:
+        VipsBindingsSingleton.instance().vips_get_argv0() == 'jlibvips'
+    }
+
 }

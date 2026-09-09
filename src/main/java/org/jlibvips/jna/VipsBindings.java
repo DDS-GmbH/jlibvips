@@ -5,6 +5,10 @@ import com.sun.jna.Pointer;
 
 public interface VipsBindings extends Library {
 
+    // operations initialise libvips on first use, lower-level calls such as the error buffer do not
+    int vips_init(String argv0);
+    String vips_get_argv0();
+
     Pointer vips_image_new_from_file(String fileName, Object...args);
     Pointer vips_image_new_from_buffer(byte[] buf, long length, String optionString, Object...args);
 
