@@ -36,7 +36,7 @@ public record PdfPage(VipsImage image, float scale) implements AutoCloseable {
   private static final float MIN_SCALE = 0.05f;
 
   /**
-   * Pixels the estimated fitting scale may fall short of the real header by.
+   * Pixels the estimated fitting scale may fall short of the real header (specifying the dimensions) by.
    */
   private static final int TOLERANCE_PX = 1;
 
