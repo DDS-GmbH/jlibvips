@@ -18,7 +18,13 @@ public class VipsBindingsSingleton {
             if(libraryPath == null || libraryPath.isEmpty()) {
                 throw new IllegalStateException("Please call VipsBindingsSingleton.configure(...) before getting the instance.");
             }
-            INSTANCE = Native.load(libraryPath, VipsBindings.class);
+            VipsBindings bindings = Native.load(libraryPath, VipsBindings.class);
+            // libvips before 8.17 creates its global lock in vips_init(); calls that skip the lazy
+            // initialisation of operations, such as vips_error_clear(), crash without it.
+            if (bindings.vips_init("jlibvips") != 0) {
+                throw new IllegalStateException("Could not initialise libvips: " + bindings.vips_error_buffer());
+            }
+            INSTANCE = bindings;
         }
         return INSTANCE;
     }
