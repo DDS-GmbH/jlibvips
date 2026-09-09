@@ -110,7 +110,7 @@ public class VipsImage implements Closeable {
      * @deprecated delegates to {@link #fromPdfBuffer(byte[], int, float)}, which is as fast and settles on the same
      * scale as {@link #fromPdf(Path, int, float)}.
      */
-    @Deprecated
+    @Deprecated(since = "2026-09-09")
     public static VipsImage fromPdfBufferFast(byte[] buffer, int page, float initialScale) {
         return fromPdfBuffer(buffer, page, initialScale);
     }
