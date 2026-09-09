@@ -145,7 +145,7 @@ public record PdfPage(VipsImage image, float scale) implements AutoCloseable {
     int loads = 1;
     VipsImage image = loadPage(source, origin, page, scale);
     if (!fits(image)) {
-      // libvips renders rint(size * scale) pixels per side, so this image header bounds the page
+      // libvips renders rint(size * scale) pixels per side, so the image dimension headers bound the page
       // size from below.
       double minWidth = (image.getWidth() - 0.5) / (double) maxScale;
       double minHeight = (image.getHeight() - 0.5) / (double) maxScale;
