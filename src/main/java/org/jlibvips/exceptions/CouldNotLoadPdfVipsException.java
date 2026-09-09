@@ -6,4 +6,8 @@ public class CouldNotLoadPdfVipsException extends VipsException {
         super("pdfload", returnValue);
     }
 
+    public CouldNotLoadPdfVipsException(String message) {
+        super("pdfload", message);
+    }
+
 }
